@@ -436,6 +436,8 @@ class GSCWalletGUI:
         ttk.Button(controls_frame, text="Save Blockchain", command=self.save_blockchain).pack(side=tk.LEFT, padx=5)
         ttk.Button(controls_frame, text="Load Blockchain", command=self.load_blockchain).pack(side=tk.LEFT, padx=5)
         ttk.Button(controls_frame, text="Validate Chain", command=self.validate_chain).pack(side=tk.LEFT, padx=5)
+        ttk.Button(controls_frame, text="📡 Broadcast Chain", command=self.broadcast_blockchain).pack(side=tk.LEFT, padx=5)
+        ttk.Button(controls_frame, text="🔄 Sync from Peers", command=self.sync_from_peers).pack(side=tk.LEFT, padx=5)
         
         # Network info
         info_frame = ttk.LabelFrame(network_frame, text="Network Information", padding=10)
@@ -778,6 +780,38 @@ class GSCWalletGUI:
             messagebox.showinfo("Validation", "Blockchain is valid!\nBalances have been updated.")
         else:
             messagebox.showerror("Validation", "Blockchain is invalid!")
+    
+    def broadcast_blockchain(self):
+        """Broadcast blockchain to all connected peers"""
+        if not self.network_node:
+            messagebox.showwarning("Network", "Network node not available")
+            return
+        
+        try:
+            success = self.network_node.broadcast_blockchain()
+            if success:
+                messagebox.showinfo("Broadcast", "Blockchain successfully broadcasted to connected peers!")
+            else:
+                messagebox.showwarning("Broadcast", "No peers connected or broadcast failed")
+        except Exception as e:
+            messagebox.showerror("Broadcast Error", f"Failed to broadcast blockchain: {str(e)}")
+    
+    def sync_from_peers(self):
+        """Request blockchain synchronization from peers"""
+        if not self.network_node:
+            messagebox.showwarning("Network", "Network node not available")
+            return
+        
+        try:
+            success = self.network_node.request_blockchain_from_peers()
+            if success:
+                messagebox.showinfo("Sync", "Blockchain sync requested from connected peers!")
+                # Update displays after potential sync
+                self.root.after(3000, self.update_displays)  # Update after 3 seconds
+            else:
+                messagebox.showwarning("Sync", "No peers connected or sync request failed")
+        except Exception as e:
+            messagebox.showerror("Sync Error", f"Failed to sync from peers: {str(e)}")
     
     def run(self):
         # Start update loop

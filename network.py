@@ -237,30 +237,27 @@ class GSCNetworkNode:
             return False
     
     def discover_peers(self):
-        """Discover peers on local network"""
+        """Discover and connect to other GSC nodes"""
+        # Enhanced peer discovery with better connectivity
+        potential_peers = [
+            ('127.0.0.1', 8334),
+            ('127.0.0.1', 8335),
+            ('127.0.0.1', 8336),
+            ('localhost', 8334),
+            ('localhost', 8335)
+        ]
+        
         while self.running:
-            try:
-                # Try common ports and local IPs
-                local_ips = ['127.0.0.1', '192.168.1.', '192.168.0.', '10.0.0.']
-                
-                for base_ip in local_ips:
-                    if base_ip.endswith('.'):
-                        # Scan subnet
-                        for i in range(1, 255):
-                            if not self.running:
-                                break
-                            ip = f"{base_ip}{i}"
-                            if ip != self.get_local_ip():
-                                self.try_connect_peer(ip, self.port)
-                    else:
-                        self.try_connect_peer(base_ip, self.port)
-                
-                time.sleep(30)  # Discovery every 30 seconds
-                
-            except Exception as e:
-                print(f"Error in peer discovery: {e}")
-                time.sleep(60)
-    
+            for host, port in potential_peers:
+                peer_addr = f"{host}:{port}"
+                if peer_addr not in self.peers and port != self.port:
+                    try:
+                        self.connect_to_peer(host, port)
+                        time.sleep(1)  # Small delay between connections
+                    except:
+                        pass
+            
+            time.sleep(15)  # Check for new peers more frequently
     def try_connect_peer(self, ip, port):
         """Try to connect to a potential peer"""
         try:
@@ -402,6 +399,79 @@ class GSCNetworkNode:
         except:
             return "127.0.0.1"
     
+    def broadcast_blockchain(self):
+        """Broadcast entire blockchain to all connected peers"""
+        if not self.peers:
+            print("No peers connected to broadcast blockchain")
+            return False
+        
+        try:
+            blockchain_data = {
+                'type': 'blockchain_broadcast',
+                'chain': [self.serialize_block(block) for block in self.blockchain.chain],
+                'node_id': self.node_id,
+                'timestamp': datetime.now().isoformat(),
+                'chain_length': len(self.blockchain.chain)
+            }
+            
+            broadcast_count = 0
+            for peer_address in list(self.peers):
+                try:
+                    host, port = peer_address.split(':')
+                    peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    peer_socket.settimeout(10)
+                    peer_socket.connect((host, int(port)))
+                    
+                    data = json.dumps(blockchain_data).encode()
+                    peer_socket.send(data)
+                    peer_socket.close()
+                    broadcast_count += 1
+                    print(f"Blockchain broadcasted to {peer_address}")
+                    
+                except Exception as e:
+                    print(f"Failed to broadcast blockchain to {peer_address}: {e}")
+                    self.peers.discard(peer_address)
+            
+            print(f"Blockchain broadcast completed to {broadcast_count} peers")
+            return broadcast_count > 0
+            
+        except Exception as e:
+            print(f"Error broadcasting blockchain: {e}")
+            return False
+    
+    def request_blockchain_from_peers(self):
+        """Request blockchain from all connected peers"""
+        if not self.peers:
+            print("No peers connected to request blockchain from")
+            return False
+        
+        request_message = {
+            'type': 'get_blockchain',
+            'node_id': self.node_id,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        request_count = 0
+        for peer_address in list(self.peers):
+            try:
+                host, port = peer_address.split(':')
+                peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                peer_socket.settimeout(5)
+                peer_socket.connect((host, int(port)))
+                
+                data = json.dumps(request_message).encode()
+                peer_socket.send(data)
+                peer_socket.close()
+                request_count += 1
+                print(f"Blockchain requested from {peer_address}")
+                
+            except Exception as e:
+                print(f"Failed to request blockchain from {peer_address}: {e}")
+                self.peers.discard(peer_address)
+        
+        print(f"Blockchain requested from {request_count} peers")
+        return request_count > 0
+
     def get_network_stats(self):
         """Get network statistics"""
         return {
