@@ -145,6 +145,23 @@ class WalletManager:
             'opened': True
         }
     
+    def get_current_address(self):
+        """Get the current wallet's master address"""
+        if not self.current_wallet or not self.wallet_data:
+            return None
+        return self.wallet_data.get('master_address')
+    
+    def get_wallet_info(self):
+        """Get current wallet information"""
+        if not self.current_wallet:
+            return None
+        return {
+            'name': self.current_wallet,
+            'address': self.get_current_address(),
+            'addresses_count': len(self.wallet_data.get('addresses', [])),
+            'encrypted': self.is_encrypted
+        }
+    
     def close_wallet(self):
         """Close current wallet"""
         self.current_wallet = None

@@ -50,9 +50,9 @@ def check_dependencies():
         for package in missing_packages:
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-                print(f"✓ {package} installed successfully")
+                print(f"[OK] {package} installed successfully")
             except subprocess.CalledProcessError:
-                print(f"✗ Failed to install {package}")
+                print(f"[X] Failed to install {package}")
                 return False
     
     return True
@@ -60,17 +60,17 @@ def check_dependencies():
 def main():
     """Main launcher function"""
     print("=" * 60)
-    print("🪙 GSC COIN - CUSTOM BLOCKCHAIN CRYPTOCURRENCY 🪙")
+    print("=== GSC COIN - CUSTOM BLOCKCHAIN CRYPTOCURRENCY ===")
     print("=" * 60)
     print()
     print("Features:")
-    print("✅ Complete blockchain from Block 0 (Genesis)")
-    print("✅ Mining with nonce visualization")
-    print("✅ Custom mempool management")
-    print("✅ Transaction verification & caching")
-    print("✅ Node networking & block propagation")
-    print("✅ Mining rewards system")
-    print("✅ Full GUI wallet interface")
+    print("[+] Complete blockchain from Block 0 (Genesis)")
+    print("[+] Mining with nonce visualization")
+    print("[+] Custom mempool management")
+    print("[+] Transaction verification & caching")
+    print("[+] Node networking & block propagation")
+    print("[+] Mining rewards system")
+    print("[+] Full GUI wallet interface")
     print()
     
     # Check dependencies
@@ -80,7 +80,34 @@ def main():
         return
     
     print("Starting GSC Coin blockchain...")
-    time.sleep(2)
+    time.sleep(1)
+
+    # DATA DEPLOYMENT FOR EXE
+    if getattr(sys, 'frozen', False):
+        import shutil
+        base_path = sys._MEIPASS
+        app_path = os.path.dirname(sys.executable)
+        
+        # Deploy blockchain file if missing
+        if not os.path.exists(os.path.join(app_path, "gsc_blockchain.json")):
+            bundled_chain = os.path.join(base_path, "gsc_blockchain.json")
+            if os.path.exists(bundled_chain):
+                try:
+                    shutil.copy2(bundled_chain, os.path.join(app_path, "gsc_blockchain.json"))
+                    print("[+] Deployed initial blockchain state")
+                except Exception as e:
+                    print(f"[!] Error deploying blockchain: {e}")
+        
+        # Deploy wallets if missing
+        wallets_dir = os.path.join(app_path, "wallets")
+        if not os.path.exists(wallets_dir):
+            bundled_wallets = os.path.join(base_path, "wallets")
+            if os.path.exists(bundled_wallets):
+                try:
+                    shutil.copytree(bundled_wallets, wallets_dir)
+                    print("[+] Deployed initial wallets")
+                except Exception as e:
+                    print(f"[!] Error deploying wallets: {e}")
     
     try:
         # Initialize blockchain
@@ -100,12 +127,12 @@ def main():
         
         # Start P2P server
         if network_node.start_server():
-            print("✓ P2P network node started successfully")
+            print("[OK] P2P network node started successfully")
         else:
-            print("⚠ P2P network failed to start (running in standalone mode)")
+            print("!! P2P network failed to start (running in standalone mode)")
         
         # Launch GUI wallet
-        print("🚀 Launching GSC Coin Wallet GUI...")
+        print(">>> Launching GSC Coin Wallet GUI...")
         wallet = GSCWalletGUI(blockchain, network_node)
         wallet.run()
         
